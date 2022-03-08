@@ -105,6 +105,12 @@ RESOURCES = {
         'replication_method': 'INCREMENTAL',
         'replication_keys': ['updated_at'],
     },
+    'merge_request_discussions': {
+        'url': '/projects/{id}/merge_requests/{secondary_id}/discussions',
+        'schema': load_schema('merge_request_discussions'),
+        'key_properties': ['id', 'merge_request_iid', 'discussion_id'],
+        'replication_method': 'FULL_TABLE',
+    },
     'project_milestones': {
         'url': '/projects/{id}/milestones',
         'schema': load_schema('milestones'),
@@ -459,6 +465,7 @@ def sync_merge_requests(project):
             # (if it has changed, new commits may be there to fetch)
             sync_merge_request_commits(project, transformed_row)
             sync_merge_request_approvals(project, transformed_row)
+            sync_merge_request_discussion_items(project, transformed_row)
 
     singer.write_state(STATE)
 
@@ -523,14 +530,29 @@ def sync_merge_request_approvals(project, merge_request):
             singer.write_record(entity, transformed_row, time_extracted=utils.now())
             utils.update_state(STATE, state_key, row['updated_at'])
 
-            # And then sync all the commits for this MR
-            # (if it has changed, new commits may be there to fetch)
-            sync_merge_request_commits(project, transformed_row)
     singer.write_state(STATE)
 
 
 def sync_merge_request_discussion_items(project, merge_request):
-    pass
+    entity = "merge_request_discussions"
+    stream = CATALOG.get_stream(entity)
+    if stream is None or not stream.is_selected():
+        return
+    mdata = metadata.to_map(stream.metadata)
+
+    # Keep a state for the merge requests fetched per project
+    state_key = "project_{}_merge_request_discussions".format(project["id"])
+    start_date = get_start(state_key)
+    url = get_url(entity=entity, id=project['id'], start_date=start_date, secondary_id=merge_request['iid'])
+
+    with Transformer(pre_hook=format_timestamp) as transformer:
+        for row in gen_request(url):
+            transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
+
+            # Write the MR record
+            singer.write_record(entity, transformed_row, time_extracted=utils.now())
+
+    singer.write_state(STATE)
 
 
 def sync_releases(project):
