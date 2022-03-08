@@ -449,9 +449,6 @@ def sync_merge_requests(project):
                 row["human_time_estimate"] = None
                 row["human_total_time_spent"] = None
 
-            #assert False, row
-            #assert False, RESOURCES[entity]["schema"]
-            #assert False, mdata
             transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
 
             # Write the MR record
