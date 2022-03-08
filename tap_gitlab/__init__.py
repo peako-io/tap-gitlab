@@ -458,6 +458,7 @@ def sync_merge_requests(project):
             # And then sync all the commits for this MR
             # (if it has changed, new commits may be there to fetch)
             sync_merge_request_commits(project, transformed_row)
+            sync_merge_request_approvals(project, transformed_row)
 
     singer.write_state(STATE)
 
@@ -512,7 +513,7 @@ def sync_merge_request_approvals(project, merge_request):
     # Keep a state for the merge requests fetched per project
     state_key = "project_{}_merge_request_approvals".format(project["id"])
     start_date = get_start(state_key)
-    url = get_url(entity=entity, id=project['id'], start_date=start_date)
+    url = get_url(entity=entity, id=project['id'], start_date=start_date, secondary_id=merge_request['iid'])
 
     with Transformer(pre_hook=format_timestamp) as transformer:
         for row in gen_request(url):
