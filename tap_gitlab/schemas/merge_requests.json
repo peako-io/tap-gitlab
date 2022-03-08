@@ -13,8 +13,89 @@
         "milestone_id": {
             "type": ["null", "integer"]
         },
+        "milestone": {
+            "type": "object",
+            "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "project_id": {
+                  "type": "integer"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "state": {
+                  "type": "string"
+                }
+            }
+        },
         "author_id": {
             "type": ["null", "integer"]
+        },
+        "author": {
+            "type": "object",
+            "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "integer"
+                },
+                "state": {
+                  "type": "string"
+                },
+                "created_at": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "due_date": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "start_date": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            }
         },
         "assignee_id": {
             "type": ["null", "integer"]
@@ -22,13 +103,41 @@
         "assignees": {
             "type": "array",
             "items": {
-                "type": ["null", "integer"]
+                "type": "object",
+                "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "state": {
+                      "type": "string"
+                    }
+                }
             }
         },        
         "reviewers": {
             "type": "array",
             "items": {
-                "type": ["null", "integer"]
+                "type": "object",
+                "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "state": {
+                      "type": "string"
+                    }
+                }
             }
         },  
         "merged_by_id": {
@@ -164,6 +273,59 @@
         },
         "human_total_time_spent": {
             "type": ["null", "string"]
-        }   
+        },
+        "changes_count": {
+            "type": ["null", "string"]
+        },
+        "latest_build_started_at": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "latest_build_finished_at": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "first_deployed_to_production_at": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "pipeline": {
+            "type": "object",
+            "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "sha": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                }
+            }
+        },
+        "blocking_discussions_resolved": {
+            "type": ["null", "boolean"]
+        }
     }
 }

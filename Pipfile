@@ -1,0 +1,18 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pipenv = "==2022.1.8"
+
+
+[packages]
+requests = "*"
+singer-python = "*"
+strict_rfc3339 = "*"
+backoff = "*"
+pytz = "*"
+
+[requires]
+python_version = "3.9"
