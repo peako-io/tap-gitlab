@@ -98,6 +98,13 @@ RESOURCES = {
         'replication_method': 'INCREMENTAL',
         'replication_keys': ['updated_at'],
     },
+    'merge_request_approvals': {
+        'url': '/projects/{id}/merge_requests/{secondary_id}/approvals',
+        'schema': load_schema('merge_request_approvals'),
+        'key_properties': ['id', 'merge_request_iid', 'approval_id'],
+        'replication_method': 'INCREMENTAL',
+        'replication_keys': ['updated_at'],
+    },
     'project_milestones': {
         'url': '/projects/{id}/milestones',
         'schema': load_schema('milestones'),
@@ -442,6 +449,9 @@ def sync_merge_requests(project):
                 row["human_time_estimate"] = None
                 row["human_total_time_spent"] = None
 
+            #assert False, row
+            #assert False, RESOURCES[entity]["schema"]
+            #assert False, mdata
             transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
 
             # Write the MR record
@@ -496,7 +506,29 @@ def sync_merge_request_commits(project, merge_request):
 
 
 def sync_merge_request_approvals(project, merge_request):
-    pass
+    entity = "merge_request_approvals"
+    stream = CATALOG.get_stream(entity)
+    if stream is None or not stream.is_selected():
+        return
+    mdata = metadata.to_map(stream.metadata)
+
+    # Keep a state for the merge requests fetched per project
+    state_key = "project_{}_merge_request_approvals".format(project["id"])
+    start_date = get_start(state_key)
+    url = get_url(entity=entity, id=project['id'], start_date=start_date)
+
+    with Transformer(pre_hook=format_timestamp) as transformer:
+        for row in gen_request(url):
+            transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
+
+            # Write the MR record
+            singer.write_record(entity, transformed_row, time_extracted=utils.now())
+            utils.update_state(STATE, state_key, row['updated_at'])
+
+            # And then sync all the commits for this MR
+            # (if it has changed, new commits may be there to fetch)
+            sync_merge_request_commits(project, transformed_row)
+    singer.write_state(STATE)
 
 
 def sync_merge_request_discussion_items(project, merge_request):

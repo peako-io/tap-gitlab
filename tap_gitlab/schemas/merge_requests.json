@@ -14,7 +14,7 @@
             "type": ["null", "integer"]
         },
         "milestone": {
-            "type": "object",
+            "type": ["null", "object"],
             "properties": {
                 "id": {
                   "type": "integer"
@@ -33,72 +33,66 @@
                 }
             }
         },
-        "author_id": {
-            "type": ["null", "integer"]
-        },
         "author": {
-            "type": "object",
+            "type": ["null", "object"],
             "properties": {
                 "name": {
-                  "type": "string"
+                    "type": "string"
                 },
                 "username": {
-                  "type": "string"
+                    "type": "string"
                 },
                 "id": {
-                  "type": "integer"
+                    "type": "integer"
                 },
                 "state": {
-                  "type": "string"
-                },
-                "created_at": {
-                    "anyOf": [
-                        {
-                            "type": "string",
-                            "format": "date-time"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ]
-                },
-                "updated_at": {
-                    "anyOf": [
-                        {
-                            "type": "string",
-                            "format": "date-time"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ]
-                },
-                "due_date": {
-                    "anyOf": [
-                        {
-                            "type": "string",
-                            "format": "date-time"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ]
-                },
-                "start_date": {
-                    "anyOf": [
-                        {
-                            "type": "string",
-                            "format": "date-time"
-                        },
-                        {
-                            "type": "null"
-                        }
-                    ]
+                    "type": "string"
                 }
             }
         },
-        "assignee_id": {
-            "type": ["null", "integer"]
+        "created_at": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "updated_at": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "due_date": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "start_date": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                {
+                    "type": "null"
+                }
+            ]
         },
         "assignees": {
             "type": "array",
@@ -145,28 +139,6 @@
         },
         "closed_by_id": {
             "type": ["null", "integer"]
-        },
-        "created_at": {
-            "anyOf": [
-                {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                {
-                    "type": "null"
-                }
-            ]
-        },
-        "updated_at": {
-            "anyOf": [
-                {
-                    "type": "string",
-                    "format": "date-time"
-                },
-                {
-                    "type": "null"
-                }
-            ]
         },
         "merged_at": {
             "anyOf": [
@@ -311,7 +283,7 @@
             ]
         },
         "pipeline": {
-            "type": "object",
+            "type": ["null", "object"],
             "properties": {
                 "id": {
                   "type": "integer"
