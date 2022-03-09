@@ -7,6 +7,12 @@
         "string"
       ]
     },
+    "merge_request_id": {
+      "type": ["null", "integer"]
+    },
+    "merge_request_iid": {
+      "type": ["null", "integer"]
+    },
     "individual_note": {
       "type": [
         "null",
