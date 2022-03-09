@@ -359,7 +359,7 @@ def sync_commits(project):
 
     # Keep a state for the commits fetched per project
     state_key = "project_{}_commits".format(project["id"])
-    start_date=get_start(state_key)
+    start_date = get_start(state_key)
 
     url = get_url(entity=entity, id=project['id'], start_date=start_date)
     with Transformer(pre_hook=format_timestamp) as transformer:
@@ -503,6 +503,7 @@ def sync_merge_request_commits(project, merge_request):
         for row in gen_request(url):
             row['project_id'] = project['id']
             row['merge_request_iid'] = merge_request['iid']
+            row['merge_request_id'] = merge_request['id']
             row['commit_id'] = row['id']
             row['commit_short_id'] = row['short_id']
             transformed_row = transformer.transform(row, RESOURCES["merge_request_commits"]["schema"], mdata)
