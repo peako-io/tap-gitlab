@@ -94,21 +94,21 @@ RESOURCES = {
     'merge_request_detail': {
         'url': '/projects/{project_id}/merge_requests/{merge_request_id}',
         'schema': load_schema('merge_requests'),
-        'key_properties': ['id', 'merge_request_id'],
+        'key_properties': ['id'],
         'replication_method': 'INCREMENTAL',
         'replication_keys': ['updated_at'],
     },
     'merge_request_approvals': {
         'url': '/projects/{id}/merge_requests/{secondary_id}/approvals',
         'schema': load_schema('merge_request_approvals'),
-        'key_properties': ['id', 'merge_request_iid', 'approval_id'],
+        'key_properties': ['id'],
         'replication_method': 'INCREMENTAL',
         'replication_keys': ['updated_at'],
     },
     'merge_request_discussions': {
         'url': '/projects/{id}/merge_requests/{secondary_id}/discussions',
         'schema': load_schema('merge_request_discussions'),
-        'key_properties': ['id', 'merge_request_iid', 'discussion_id'],
+        'key_properties': ['id'],
         'replication_method': 'FULL_TABLE',
     },
     'project_milestones': {
