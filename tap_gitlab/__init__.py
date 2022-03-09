@@ -524,6 +524,8 @@ def sync_merge_request_approvals(project, merge_request):
 
     with Transformer(pre_hook=format_timestamp) as transformer:
         for row in gen_request(url):
+            row['merge_request_id'] = merge_request['id']
+            row['merge_request_iid'] = merge_request['iid']
             transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
 
             # Write the MR record
