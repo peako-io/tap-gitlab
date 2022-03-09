@@ -195,6 +195,9 @@
                 "type": ["null", "string"]
             }
         },
+        "draft": {
+            "type": ["null", "boolean"]
+        },
         "work_in_progress": {
             "type": ["null", "boolean"]
         },
