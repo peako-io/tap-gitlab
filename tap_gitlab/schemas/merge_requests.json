@@ -137,6 +137,23 @@
         "merged_by_id": {
             "type": ["null", "integer"]
         },
+        "merge_user": {
+            "type": ["null", "object"],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
         "closed_by_id": {
             "type": ["null", "integer"]
         },
