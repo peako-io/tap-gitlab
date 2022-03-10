@@ -1,0 +1,102 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": [
+        "null",
+        "string"
+      ]
+    },
+    "merge_request_id": {
+      "type": ["null", "integer"]
+    },
+    "merge_request_iid": {
+      "type": ["null", "integer"]
+    },
+    "individual_note": {
+      "type": [
+        "null",
+        "boolean"
+      ]
+    },
+    "notes": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "type": {
+                  "type": [
+                    "null",
+                    "string"
+                  ]
+                },
+                "body": {
+                  "type": "string"
+                },
+                "author": {
+                    "type": ["null", "object"],
+                    "properties": {
+                        "name": {
+                            "type": "string"
+                        },
+                        "username": {
+                            "type": "string"
+                        },
+                        "id": {
+                            "type": "integer"
+                        },
+                        "state": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "created_at": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
+                "system": {
+                  "type": "boolean"
+                },
+                "resolved": {
+                  "type": "boolean"
+                },
+                "resolvable": {
+                  "type": "boolean"
+                },
+                "resolved_at": {
+                      "anyOf": [
+                          {
+                              "type": "string",
+                              "format": "date-time"
+                          },
+                          {
+                              "type": "null"
+                          }
+                      ]
+                }
+            }
+        }
+    }
+  }
+}

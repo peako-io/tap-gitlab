@@ -28,17 +28,21 @@ CONFIG = {
 STATE = {}
 CATALOG = None
 
+
 def parse_datetime(datetime_str):
     dt = isoparse(datetime_str)
     if not dt.tzinfo:
         dt = dt.replace(tzinfo=pytz.UTC)
     return dt
 
+
 def get_abs_path(path):
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), path)
 
+
 def load_schema(entity):
     return utils.load_json(get_abs_path("schemas/{}.json".format(entity)))
+
 
 RESOURCES = {
     'projects': {
@@ -85,6 +89,26 @@ RESOURCES = {
         'url': '/projects/{id}/merge_requests/{secondary_id}/commits',
         'schema': load_schema('merge_request_commits'),
         'key_properties': ['project_id', 'merge_request_iid', 'commit_id'],
+        'replication_method': 'FULL_TABLE',
+    },
+    'merge_request_detail': {
+        'url': '/projects/{project_id}/merge_requests/{merge_request_id}',
+        'schema': load_schema('merge_requests'),
+        'key_properties': ['id'],
+        'replication_method': 'INCREMENTAL',
+        'replication_keys': ['updated_at'],
+    },
+    'merge_request_approvals': {
+        'url': '/projects/{id}/merge_requests/{secondary_id}/approvals',
+        'schema': load_schema('merge_request_approvals'),
+        'key_properties': ['id'],
+        'replication_method': 'INCREMENTAL',
+        'replication_keys': ['updated_at'],
+    },
+    'merge_request_discussions': {
+        'url': '/projects/{id}/merge_requests/{secondary_id}/discussions',
+        'schema': load_schema('merge_request_discussions'),
+        'key_properties': ['id'],
         'replication_method': 'FULL_TABLE',
     },
     'project_milestones': {
@@ -195,14 +219,17 @@ SESSION = requests.Session()
 
 TRUTHY = ("true", "1", "yes", "on")
 
+
 class ResourceInaccessible(Exception):
     """
     Base exception for Rousources the current user can not access.
     e.g. Unauthorized, Forbidden, Not Found errors
     """
 
+
 def truthy(val) -> bool:
     return str(val).lower() in TRUTHY
+
 
 def get_url(entity, id, secondary_id=None, start_date=None):
     if not isinstance(id, int):
@@ -232,7 +259,7 @@ def get_start(entity):
 def request(url, params=None):
     params = params or {}
 
-    headers = { "Private-Token": CONFIG['private_token'] }
+    headers = {"Private-Token": CONFIG['private_token']}
     if 'user_agent' in CONFIG:
         headers['User-Agent'] = CONFIG['user_agent']
 
@@ -250,6 +277,7 @@ def request(url, params=None):
         sys.exit(1)
 
     return resp
+
 
 def gen_request(url):
     if 'labels' in url:
@@ -288,6 +316,7 @@ def gen_request(url):
         # Just skip it and continue with the rest of the extraction
         return []
 
+
 def format_timestamp(data, typ, schema):
     result = data
     if data and typ == 'string' and schema.get('format') == 'date-time':
@@ -297,11 +326,13 @@ def format_timestamp(data, typ, schema):
 
     return result
 
+
 def flatten_id(item, target):
     if target in item and item[target] is not None:
         item[target + '_id'] = item.pop(target, {}).pop('id', None)
     else:
         item[target + '_id'] = None
+
 
 def sync_branches(project):
     entity = "branches"
@@ -318,6 +349,7 @@ def sync_branches(project):
             transformed_row = transformer.transform(row, RESOURCES["branches"]["schema"], mdata)
             singer.write_record("branches", transformed_row, time_extracted=utils.now())
 
+
 def sync_commits(project):
     entity = "commits"
     stream = CATALOG.get_stream(entity)
@@ -327,7 +359,7 @@ def sync_commits(project):
 
     # Keep a state for the commits fetched per project
     state_key = "project_{}_commits".format(project["id"])
-    start_date=get_start(state_key)
+    start_date = get_start(state_key)
 
     url = get_url(entity=entity, id=project['id'], start_date=start_date)
     with Transformer(pre_hook=format_timestamp) as transformer:
@@ -339,6 +371,7 @@ def sync_commits(project):
             utils.update_state(STATE, state_key, row['created_at'])
 
     singer.write_state(STATE)
+
 
 def sync_issues(project):
     entity = "issues"
@@ -386,6 +419,7 @@ def sync_issues(project):
 
     singer.write_state(STATE)
 
+
 def sync_merge_requests(project):
     entity = "merge_requests"
     stream = CATALOG.get_stream(entity)
@@ -395,7 +429,7 @@ def sync_merge_requests(project):
 
     # Keep a state for the merge requests fetched per project
     state_key = "project_{}_merge_requests".format(project["id"])
-    start_date=get_start(state_key)
+    start_date = get_start(state_key)
 
     url = get_url(entity=entity, id=project['id'], start_date=start_date)
     with Transformer(pre_hook=format_timestamp) as transformer:
@@ -406,17 +440,7 @@ def sync_merge_requests(project):
             flatten_id(row, "merged_by")
             flatten_id(row, "closed_by")
 
-            # Get the assignee ids
-            assignee_ids = []
-            for assignee in row.get("assignees"):
-                assignee_ids.append(assignee["id"])
-            row["assignees"] = assignee_ids
-
-            # Get the reviewer ids
-            reviewer_ids = []
-            for reviewer in row.get("reviewers"):
-                reviewer_ids.append(reviewer["id"])
-            row["reviewers"] = reviewer_ids
+            row = enrich_merge_request_data(project=project, merge_request=row)
 
             # Get the time_stats
             time_stats = row.get("time_stats")
@@ -440,8 +464,31 @@ def sync_merge_requests(project):
             # And then sync all the commits for this MR
             # (if it has changed, new commits may be there to fetch)
             sync_merge_request_commits(project, transformed_row)
+            sync_merge_request_approvals(project, transformed_row)
+            sync_merge_request_discussion_items(project, transformed_row)
 
     singer.write_state(STATE)
+
+
+def enrich_merge_request_data(project, merge_request):
+    merge_request_detail = sync_merge_request_detail(project, merge_request)
+    merge_request["changes_count"] = merge_request_detail["changes_count"]
+    merge_request["latest_build_started_at"] = merge_request_detail["latest_build_started_at"]
+    merge_request["latest_build_finished_at"] = merge_request_detail["latest_build_finished_at"]
+    merge_request["first_deployed_to_production_at"] = merge_request_detail["first_deployed_to_production_at"]
+    merge_request["pipeline"] = merge_request_detail["pipeline"]
+    merge_request["blocking_discussions_resolved"] = merge_request_detail["blocking_discussions_resolved"]
+    return merge_request_detail
+
+
+def sync_merge_request_detail(project, merge_request):
+    url = CONFIG['api_url'] + RESOURCES["merge_request_detail"]['url'].format(
+        project_id=project['id'],
+        merge_request_id=merge_request["iid"],
+    )
+    resp = request(url, {})
+    return resp.json()
+
 
 def sync_merge_request_commits(project, merge_request):
     entity = "merge_request_commits"
@@ -456,11 +503,62 @@ def sync_merge_request_commits(project, merge_request):
         for row in gen_request(url):
             row['project_id'] = project['id']
             row['merge_request_iid'] = merge_request['iid']
+            row['merge_request_id'] = merge_request['id']
             row['commit_id'] = row['id']
             row['commit_short_id'] = row['short_id']
             transformed_row = transformer.transform(row, RESOURCES["merge_request_commits"]["schema"], mdata)
 
             singer.write_record("merge_request_commits", transformed_row, time_extracted=utils.now())
+
+
+def sync_merge_request_approvals(project, merge_request):
+    entity = "merge_request_approvals"
+    stream = CATALOG.get_stream(entity)
+    if stream is None or not stream.is_selected():
+        return
+    mdata = metadata.to_map(stream.metadata)
+
+    # Keep a state for the merge requests fetched per project
+    state_key = "project_{}_merge_request_approvals".format(project["id"])
+    start_date = get_start(state_key)
+    url = get_url(entity=entity, id=project['id'], start_date=start_date, secondary_id=merge_request['iid'])
+
+    with Transformer(pre_hook=format_timestamp) as transformer:
+        for row in gen_request(url):
+            row['merge_request_id'] = merge_request['id']
+            row['merge_request_iid'] = merge_request['iid']
+            transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
+
+            # Write the MR record
+            singer.write_record(entity, transformed_row, time_extracted=utils.now())
+            utils.update_state(STATE, state_key, row['updated_at'])
+
+    singer.write_state(STATE)
+
+
+def sync_merge_request_discussion_items(project, merge_request):
+    entity = "merge_request_discussions"
+    stream = CATALOG.get_stream(entity)
+    if stream is None or not stream.is_selected():
+        return
+    mdata = metadata.to_map(stream.metadata)
+
+    # Keep a state for the merge requests fetched per project
+    state_key = "project_{}_merge_request_discussions".format(project["id"])
+    start_date = get_start(state_key)
+    url = get_url(entity=entity, id=project['id'], start_date=start_date, secondary_id=merge_request['iid'])
+
+    with Transformer(pre_hook=format_timestamp) as transformer:
+        for row in gen_request(url):
+            row['merge_request_id'] = merge_request['id']
+            row['merge_request_iid'] = merge_request['iid']
+            transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
+
+            # Write the MR record
+            singer.write_record(entity, transformed_row, time_extracted=utils.now())
+
+    singer.write_state(STATE)
+
 
 def sync_releases(project):
     entity = "releases"
@@ -512,6 +610,7 @@ def sync_milestones(entity, element="project"):
 
             singer.write_record(element + "_milestones", transformed_row, time_extracted=utils.now())
 
+
 def sync_users(project):
     entity = "users"
     stream = CATALOG.get_stream(entity)
@@ -526,6 +625,7 @@ def sync_users(project):
             transformed_row = transformer.transform(row, RESOURCES["users"]["schema"], mdata)
             project["users"].append(row["id"])
             singer.write_record("users", transformed_row, time_extracted=utils.now())
+
 
 def sync_site_users():
     entity = "site_users"
@@ -581,6 +681,7 @@ def sync_labels(entity, element="project"):
             transformed_row = transformer.transform(row, RESOURCES[element + "_labels"]["schema"], mdata)
             singer.write_record(element + "_labels", transformed_row, time_extracted=utils.now())
 
+
 def sync_epic_issues(group, epic):
     entity = "epic_issues"
     stream = CATALOG.get_stream(entity)
@@ -599,6 +700,7 @@ def sync_epic_issues(group, epic):
             transformed_row = transformer.transform(row, RESOURCES["epic_issues"]["schema"], mdata)
 
             singer.write_record("epic_issues", transformed_row, time_extracted=utils.now())
+
 
 def sync_epics(group):
     entity = "epics"
@@ -626,6 +728,7 @@ def sync_epics(group):
             sync_epic_issues(group, transformed_row)
 
     singer.write_state(STATE)
+
 
 def sync_group(gid, pids):
     stream = CATALOG.get_stream("groups")
@@ -669,6 +772,7 @@ def sync_group(gid, pids):
         group = transformer.transform(data, RESOURCES["groups"]["schema"], mdata)
         singer.write_record("groups", group, time_extracted=time_extracted)
 
+
 def sync_pipelines(project):
     entity = "pipelines"
     stream = CATALOG.get_stream(entity)
@@ -702,6 +806,7 @@ def sync_pipelines(project):
 
     singer.write_state(STATE)
 
+
 def sync_pipelines_extended(project, pipeline):
     entity = "pipelines_extended"
     stream = CATALOG.get_stream(entity)
@@ -717,6 +822,7 @@ def sync_pipelines_extended(project, pipeline):
             transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
 
             singer.write_record(entity, transformed_row, time_extracted=utils.now())
+
 
 def sync_jobs(project, pipeline):
     entity = "jobs"
@@ -736,6 +842,7 @@ def sync_jobs(project, pipeline):
 
             transformed_row = transformer.transform(row, RESOURCES[entity]['schema'], mdata)
             singer.write_record(entity, transformed_row, time_extracted=utils.now())
+
 
 def sync_project(pid):
     url = get_url(entity="projects", id=pid)
@@ -787,6 +894,7 @@ def sync_project(pid):
         utils.update_state(STATE, state_key, last_activity_at)
         singer.write_state(STATE)
 
+
 def do_discover(select_all=False):
     streams = []
     api_url_regex = re.compile(r'^gitlab.com')
@@ -829,6 +937,7 @@ def do_discover(select_all=False):
             )
         )
     return Catalog(streams)
+
 
 def do_sync():
     LOGGER.info("Starting sync")

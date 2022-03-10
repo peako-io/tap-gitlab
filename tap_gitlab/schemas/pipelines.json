@@ -4,7 +4,13 @@
         "id": {
             "type": ["null", "integer"]
         },
+        "iid": {
+            "type": ["null", "integer"]
+        },
         "status": {
+            "type": ["null", "string"]
+        },
+        "source": {
             "type": ["null", "string"]
         },
         "ref": {
