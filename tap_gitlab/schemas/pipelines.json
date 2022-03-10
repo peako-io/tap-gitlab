@@ -10,6 +10,9 @@
         "status": {
             "type": ["null", "string"]
         },
+        "source": {
+            "type": ["null", "string"]
+        },
         "ref": {
             "type": ["null", "string"]
         },
