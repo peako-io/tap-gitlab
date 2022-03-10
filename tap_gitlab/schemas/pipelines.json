@@ -4,6 +4,9 @@
         "id": {
             "type": ["null", "integer"]
         },
+        "iid": {
+            "type": ["null", "integer"]
+        },
         "status": {
             "type": ["null", "string"]
         },
