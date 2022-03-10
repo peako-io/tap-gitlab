@@ -318,6 +318,20 @@
         },
         "blocking_discussions_resolved": {
             "type": ["null", "boolean"]
+        },
+        "diff_refs": {
+            "type": ["null", "object"],
+            "properties": {
+                "base_sha": {
+                    "type": "string"
+                },
+                "head_sha": {
+                    "type": "string"
+                },
+                "start_sha": {
+                    "type": "string"
+                }
+            }
         }
     }
 }
