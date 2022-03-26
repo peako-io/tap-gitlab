@@ -129,12 +129,6 @@ RESOURCES = {
         'key_properties': ['id'],
         'replication_method': 'FULL_TABLE',
     },
-    'site_users': {
-        'url': '/users',
-        'schema': load_schema('users'),
-        'key_properties': ['id'],
-        'replication_method': 'FULL_TABLE',
-    },
     'groups': {
         'url': '/groups/{id}',
         'schema': load_schema('groups'),
