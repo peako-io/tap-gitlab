@@ -111,6 +111,13 @@ RESOURCES = {
         'key_properties': ['id'],
         'replication_method': 'FULL_TABLE',
     },
+    'merge_request_context_commits': {
+        'url': '/projects/{id}/merge_requests/{secondary_id}/context_commits',
+        'schema': load_schema('merge_request_context_commits'),
+        'key_properties': ['id'],
+        'replication_method': 'INCREMENTAL',
+        'replication_keys': ['created_at'],
+    },
     'project_milestones': {
         'url': '/projects/{id}/milestones',
         'schema': load_schema('milestones'),
@@ -460,6 +467,7 @@ def sync_merge_requests(project):
             sync_merge_request_commits(project, transformed_row)
             sync_merge_request_approvals(project, transformed_row)
             sync_merge_request_discussion_items(project, transformed_row)
+            sync_merge_request_context_commits(project, transformed_row)
 
     singer.write_state(STATE)
 
@@ -550,6 +558,31 @@ def sync_merge_request_discussion_items(project, merge_request):
 
             # Write the MR record
             singer.write_record(entity, transformed_row, time_extracted=utils.now())
+
+    singer.write_state(STATE)
+
+
+def sync_merge_request_context_commits(project, merge_request):
+    entity = "merge_request_context_commits"
+    stream = CATALOG.get_stream(entity)
+    if stream is None or not stream.is_selected():
+        return
+    mdata = metadata.to_map(stream.metadata)
+
+    # Keep a state for the merge requests fetched per project
+    state_key = "project_{}_merge_request_context_commits".format(project["id"])
+    start_date = get_start(state_key)
+    url = get_url(entity=entity, id=project['id'], secondary_id=merge_request['iid'])
+
+    with Transformer(pre_hook=format_timestamp) as transformer:
+        for row in gen_request(url):
+            row['merge_request_id'] = merge_request['id']
+            row['merge_request_iid'] = merge_request['iid']
+            transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
+
+            # Write the MR record
+            singer.write_record(entity, transformed_row, time_extracted=utils.now())
+            utils.update_state(STATE, state_key, row['created_at'])
 
     singer.write_state(STATE)
 
