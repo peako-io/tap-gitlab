@@ -571,7 +571,6 @@ def sync_merge_request_context_commits(project, merge_request):
 
     # Keep a state for the merge requests fetched per project
     state_key = "project_{}_merge_request_context_commits".format(project["id"])
-    start_date = get_start(state_key)
     url = get_url(entity=entity, id=project['id'], secondary_id=merge_request['iid'])
 
     with Transformer(pre_hook=format_timestamp) as transformer:
