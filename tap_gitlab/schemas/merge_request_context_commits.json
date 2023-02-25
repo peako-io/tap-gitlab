@@ -1,0 +1,68 @@
+{
+    "type": "object",
+    "properties": {
+        "merge_request_iid": {
+            "type": ["null", "integer"]
+        },
+        "merge_request_id": {
+            "type": ["null", "integer"]
+        },
+        "id": {
+            "type": ["null", "string"]
+        },
+        "short_id": {
+            "type": ["null", "string"]
+        },
+        "created_at": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "title": {
+            "type": ["null", "string"]
+        },
+        "message": {
+            "type": ["null", "string"]
+        },
+        "author_name": {
+            "type": ["null", "string"]
+        },
+        "author_email": {
+            "type": ["null", "string"]
+        },
+        "authored_date": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        },
+        "committer_name": {
+            "type": ["null", "string"]
+        },
+        "committer_email": {
+            "type": ["null", "string"]
+        },
+        "committed_date": {
+            "anyOf": [
+                {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                {
+                    "type": "null"
+                }
+            ]
+        }
+    }
+}
