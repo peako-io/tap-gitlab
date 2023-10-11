@@ -88,7 +88,7 @@ RESOURCES = {
     'merge_request_commits': {
         'url': '/projects/{id}/merge_requests/{secondary_id}/commits',
         'schema': load_schema('merge_request_commits'),
-        'key_properties': ['project_id', 'merge_request_iid', 'commit_id'],
+        'key_properties': ['project_id', 'merge_request_iid'],
         'replication_method': 'FULL_TABLE',
     },
     'merge_request_detail': {
@@ -101,7 +101,7 @@ RESOURCES = {
     'merge_request_approvals': {
         'url': '/projects/{id}/merge_requests/{secondary_id}/approvals',
         'schema': load_schema('merge_request_approvals'),
-        'key_properties': ['id'],
+        'key_properties': ['id', 'merge_request_iid', 'approval_id'],
         'replication_method': 'INCREMENTAL',
         'replication_keys': ['updated_at'],
     },
@@ -449,6 +449,9 @@ def sync_merge_requests(project):
                 row["human_time_estimate"] = None
                 row["human_total_time_spent"] = None
 
+            #assert False, row
+            #assert False, RESOURCES[entity]["schema"]
+            #assert False, mdata
             transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
 
             # Write the MR record
@@ -515,6 +518,7 @@ def sync_merge_request_approvals(project, merge_request):
     # Keep a state for the merge requests fetched per project
     state_key = "project_{}_merge_request_approvals".format(project["id"])
     start_date = get_start(state_key)
+
     url = get_url(entity=entity, id=project['id'], start_date=start_date, secondary_id=merge_request['iid'])
 
     with Transformer(pre_hook=format_timestamp) as transformer:
@@ -522,7 +526,6 @@ def sync_merge_request_approvals(project, merge_request):
             row['merge_request_id'] = merge_request['id']
             row['merge_request_iid'] = merge_request['iid']
             transformed_row = transformer.transform(row, RESOURCES[entity]["schema"], mdata)
-
             # Write the MR record
             singer.write_record(entity, transformed_row, time_extracted=utils.now())
             utils.update_state(STATE, state_key, row['updated_at'])
