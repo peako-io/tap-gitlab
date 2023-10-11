@@ -101,7 +101,7 @@ RESOURCES = {
     'merge_request_approvals': {
         'url': '/projects/{id}/merge_requests/{secondary_id}/approvals',
         'schema': load_schema('merge_request_approvals'),
-        'key_properties': ['id', 'merge_request_iid', 'approval_id'],
+        'key_properties': ['id'],
         'replication_method': 'INCREMENTAL',
         'replication_keys': ['updated_at'],
     },
